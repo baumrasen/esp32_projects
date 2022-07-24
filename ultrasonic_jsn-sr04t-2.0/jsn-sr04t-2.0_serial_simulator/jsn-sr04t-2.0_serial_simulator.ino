@@ -46,7 +46,7 @@ bool getTriggerByteDisplay = false;
 bool getWrongByte = false;
 bool getWrongByteDisplay = false;
 
-#define LONG_WAIT_TIME 5000
+#define LONG_WAIT_TIME 10000
 #define INFO_WAIT_TIME 1000
 #define DISPLAY_WAIT_TIME 2500
 unsigned long longtimer = millis() - LONG_WAIT_TIME;
@@ -310,12 +310,13 @@ void display_data() {
 
     // current value k
     printIntToOled(value, 1, 4);
+    // printToOled("mm", 1, 7);    
 
   // infotimer
     
     if (inputStringDisplay=="") {
      printIntToOled(COUNTBACK, 1, 1);
-     printToOled("wait", 1, 2);    
+     printToOled("cur", 1, 2);    
     }
     else
     {
