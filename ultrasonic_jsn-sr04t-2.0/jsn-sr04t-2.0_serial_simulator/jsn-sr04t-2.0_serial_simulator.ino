@@ -2,16 +2,19 @@
 #include <U8g2lib.h> // OLED Universal Graphics library for SH1106 display chip
 
 //
-// simulate an ultra sonic sensor with serial interface
+// simulate two ultra sonic sensor with serial interface
 // 
 
-// read serial
+// write serial1 simualtor
 #define rxPin1 25 // esp32 hardware 1rx
 #define txPin1 26 // esp32 hardware 1tx
 
-// write serial simulator
+// write serial2 simulator
 #define rxPin2 16 // esp32 hardware 2rx
 #define txPin2 17 // esp32 hardware 2tx
+
+bool enableSerial1 = false;
+bool enableSerial2 = true;
 
 // pins for OLED display
 #define sdaPin 21 // Display: SDA Pin
@@ -41,18 +44,29 @@ String inputString = "";
 String inputStringDisplay = "";
 String serialInfoDisplay = "";
 String errorInfoDisplay = "";
-bool getTriggerByte = false;
-bool getTriggerByteDisplay = false;
-bool getWrongByte = false;
-bool getWrongByteDisplay = false;
+
+bool getTriggerByte1 = false;
+bool getTriggerByte1Display = false;
+bool getWrongByte1 = false;
+bool getWrongByte1Display = false;
+
+bool getTriggerByte2 = false;
+bool getTriggerByte2Display = false;
+bool getWrongByte2 = false;
+bool getWrongByte2Display = false;
 
 #define LONG_WAIT_TIME 10000
 #define INFO_WAIT_TIME 1000
 #define DISPLAY_WAIT_TIME 2500
 unsigned long longtimer = millis() - LONG_WAIT_TIME;
 unsigned long infotimer = millis() - INFO_WAIT_TIME;
-unsigned long triggerbytetimer = millis() - DISPLAY_WAIT_TIME;
-unsigned long wrongbytetimer = millis() - DISPLAY_WAIT_TIME;
+
+unsigned long triggerbyte1timer = millis() - DISPLAY_WAIT_TIME;
+unsigned long wrongbyte1timer = millis() - DISPLAY_WAIT_TIME;
+
+unsigned long triggerbyte2timer = millis() - DISPLAY_WAIT_TIME;
+unsigned long wrongbyte2timer = millis() - DISPLAY_WAIT_TIME;
+
 unsigned long serialinfotimer = millis() - DISPLAY_WAIT_TIME;
 
 int COUNTBACK = 0;
@@ -73,9 +87,16 @@ void setup()
 {
   Serial.begin(115200);
 
-  Serial2.begin(9600, SERIAL_8N1, rxPin2, txPin2);
-  Serial2.begin(9600);
-
+  if (enableSerial1) {
+    Serial1.begin(9600, SERIAL_8N1, rxPin1, txPin1);
+    Serial1.begin(9600);  
+  }
+  
+  if (enableSerial2) {
+    Serial2.begin(9600, SERIAL_8N1, rxPin2, txPin2);
+    Serial2.begin(9600);  
+  }
+  
   oled.begin();
   oled.clear();
 
@@ -176,15 +197,15 @@ void loop()
     COUNTBACK = COUNTBACK - INFO_WAIT_TIME/1000;
   }
  
-  if (getTriggerByte) {
+  if (getTriggerByte1) {
     delay(50);
-    getTriggerByteDisplay = true;
-    triggerbytetimer = millis();
+    getTriggerByte1Display = true;
+    triggerbyte1timer = millis();
     
-    Serial2.write(b, sizeof(b));
+    Serial1.write(b, sizeof(b));
 
     // Serial.println(" get 0x55 from serial read ");
-    Serial.print(" dat ");
+    Serial.print(" dat 1 ");
     for (i = 0; i < sizeof(b); i++) {
        printHexToSerial(b[i], Serial);
     }
@@ -195,27 +216,57 @@ void loop()
     // clear the string:
     inputStringDisplay = inputString;
     inputString = "";
-    getTriggerByte = false;
+    getTriggerByte1 = false;
   }
 
-  if (millis() > (triggerbytetimer + DISPLAY_WAIT_TIME))
+  if (getTriggerByte2) {
+    delay(50);
+    getTriggerByte2Display = true;
+    triggerbyte2timer = millis();
+    
+    Serial2.write(b, sizeof(b));
+
+    // Serial.println(" get 0x55 from serial read ");
+    Serial.print(" dat 2 ");
+    for (i = 0; i < sizeof(b); i++) {
+       printHexToSerial(b[i], Serial);
+    }
+
+    Serial.println(" written.");
+    // k++;
+        
+    // clear the string:
+    inputStringDisplay = inputString;
+    inputString = "";
+    getTriggerByte2 = false;
+  }
+
+  if (millis() > (triggerbyte1timer + DISPLAY_WAIT_TIME))
   {
     // set triggerbytetimer helper
     // triggerbytetimer = millis();    
-    getTriggerByteDisplay = false;
+    getTriggerByte1Display = false;
     resetInputStringDisplay();    
   }
 
-  if (getWrongByte) {
+  if (millis() > (triggerbyte2timer + DISPLAY_WAIT_TIME))
+  {
+    // set triggerbytetimer helper
+    // triggerbytetimer = millis();    
+    getTriggerByte2Display = false;
+    resetInputStringDisplay();    
+  }
+
+  if (getWrongByte1) {
     delay(50);
-    getWrongByteDisplay = true;
-    wrongbytetimer = millis();
+    getWrongByte1Display = true;
+    wrongbyte1timer = millis();
 
     // Serial.println(inputString);
 
     // Serial.println("Verifybyte != 0x55");
     
-    Serial.print(" err ");
+    Serial.print(" err 1 ");
     for (i = 0; i < sizeof(b); i++) {
       printHexToSerial(b[i], Serial);
     }
@@ -226,14 +277,45 @@ void loop()
     // clear the string:
     inputStringDisplay = inputString;
     inputString = "";
-    getWrongByte = false;
+    getWrongByte1 = false;
   }
 
-  if (millis() > (wrongbytetimer + DISPLAY_WAIT_TIME))
+  if (getWrongByte2) {
+    delay(50);
+    getWrongByte2Display = true;
+    wrongbyte2timer = millis();
+
+    // Serial.println(inputString);
+
+    // Serial.println("Verifybyte != 0x55");
+    
+    Serial.print(" err 2 ");
+    for (i = 0; i < sizeof(b); i++) {
+      printHexToSerial(b[i], Serial);
+    }
+    
+    Serial.print("   <<< ");
+    Serial.println(" error.");
+    
+    // clear the string:
+    inputStringDisplay = inputString;
+    inputString = "";
+    getWrongByte2 = false;
+  }
+
+  if (millis() > (wrongbyte1timer + DISPLAY_WAIT_TIME))
   {
     // set triggerbytetimer helper
     // triggerbytetimer = millis();
-    getWrongByteDisplay = false;
+    getWrongByte1Display = false;
+    resetInputStringDisplay();
+  }
+
+    if (millis() > (wrongbyte2timer + DISPLAY_WAIT_TIME))
+  {
+    // set triggerbytetimer helper
+    // triggerbytetimer = millis();
+    getWrongByte2Display = false;
     resetInputStringDisplay();
   }
 
@@ -258,6 +340,45 @@ void loop()
 /*  delay response. Multiple bytes of data may be available.                      *
 /*  Because of Serial2 is used, serialEvent2 is used here!                        *
 /* ********************************************************************************/
+
+void serialEvent1() {
+  bool DEBUG = true;
+  while (Serial1.available()) {
+
+    j = 0;
+
+    Serial.println("=========================================================");
+    Serial.print("got serial data on serial1  -->  ");
+    
+    serialinfotimer = millis();
+    serialInfoDisplay = "Data on Serial2";
+    // byte message[1]={0xFF};
+
+    // Serial.print("Current k: ");
+    // Serial.print(k);
+    // Serial.print(" (hex: ");
+    // Serial.print(convertToHex(k));
+    // Serial.println(")");
+
+    // get the new byte:
+    byte inByte = (byte)Serial1.read();
+
+    Serial.print("inByte: ");
+    Serial.println(convertToHex(inByte));
+  
+    // add it to the inputString:
+    inputString += convertToHex(inByte);    
+    // if the incoming byte is equal verifybyte, set a flag so the main loop can
+    // do something about it:
+    if (inByte == verifybyte) {
+      getTriggerByte1 = true;
+    }
+    else
+    {
+      getWrongByte1 = true;
+    }
+  }
+}
 
 void serialEvent2() {
   bool DEBUG = true;
@@ -289,11 +410,11 @@ void serialEvent2() {
     // if the incoming byte is equal verifybyte, set a flag so the main loop can
     // do something about it:
     if (inByte == verifybyte) {
-      getTriggerByte = true;
+      getTriggerByte2 = true;
     }
     else
     {
-      getWrongByte = true;
+      getWrongByte2 = true;
     }
   }
 }
@@ -338,15 +459,29 @@ void display_data() {
         printHexToOled(b[i], 5, i+1);
     }
 
-  // trigger byte
-    if (getTriggerByteDisplay) {
+  // trigger byte 1
+    if (getTriggerByte1Display) {
       printToOled("t", 1, 7);
       printToOled("written", 5, 6);
       printToOled("V-byte == 0x55", 3, 1);
     }
       
-  // wrong byte
-    if (getWrongByteDisplay) {
+  // wrong byte 1
+    if (getWrongByte1Display) {
+      printToOled("w", 1, 8);
+      printToOled("FAILED", 6, 6);
+      printToOled("V-byte != 0x55", 4, 1);
+    } 
+
+      // trigger byte 2
+    if (getTriggerByte2Display) {
+      printToOled("t", 1, 7);
+      printToOled("written", 5, 6);
+      printToOled("V-byte == 0x55", 3, 1);
+    }
+      
+  // wrong byte 2
+    if (getWrongByte2Display) {
       printToOled("w", 1, 8);
       printToOled("FAILED", 6, 6);
       printToOled("V-byte != 0x55", 4, 1);
@@ -358,7 +493,10 @@ void display_data() {
 }
 
 void resetInputStringDisplay() {
-    if ((getTriggerByteDisplay == false) && (getWrongByteDisplay == false)) {
+    if ((getTriggerByte1Display == false) && (getWrongByte1Display == false)) {
+      inputStringDisplay = "";      
+    }      
+    if ((getTriggerByte2Display == false) && (getWrongByte2Display == false)) {
       inputStringDisplay = "";      
     }      
 }
