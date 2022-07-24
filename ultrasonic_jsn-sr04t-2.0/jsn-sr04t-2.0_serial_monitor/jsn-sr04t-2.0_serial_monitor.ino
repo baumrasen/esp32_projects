@@ -33,6 +33,7 @@ unsigned int bar_y1, bar_y2;
 
 bool enableSerialLog = true;
 bool enableExtendedSerialLog = false;
+bool enableArraySerialLog = false;
 int enableSound = 0;
 int visbileState = 1;
 
@@ -40,16 +41,22 @@ int visbileState = 1;
 #define CLK 35
 int COUNT = 0;
 int COUNTBACK = 0;
+int COUNTDATASET1 = 0;
+int COUNTDATASET2 = 0;
 
-#define LONG_WAIT_TIME 5000
-#define INFO_WAIT_TIME 1000
+#define LONG_WAIT_TIME 15000
+#define INFO_WAIT_TIME 5000
 #define DISPLAY_WAIT_TIME 2500
+#define DATA_SET_COUNTER 5
+#define DATA_WAIT_TIME 500
 unsigned long longtimer = millis() - LONG_WAIT_TIME;
 unsigned long infotimer = millis() - INFO_WAIT_TIME;
 unsigned long triggerbytetimer = millis() - DISPLAY_WAIT_TIME;
 unsigned long wrongbytetimer = millis() - DISPLAY_WAIT_TIME;
 unsigned long getData1timer = millis() - LONG_WAIT_TIME;
 unsigned long getData2timer = millis() - LONG_WAIT_TIME;
+unsigned long getDataSet1timer = millis() - DATA_WAIT_TIME;
+unsigned long getDataSet2timer = millis() - DATA_WAIT_TIME;
 
 /* **************** DISPLAY SETTINGS **************** */
 #define ROW_HEIGHT 9
@@ -78,6 +85,9 @@ int noSerial2Data = 0;
 int distanceFromSerial1 = -1;
 int distanceFromSerial2 = -1;
 
+int distancesFromSerial1[DATA_SET_COUNTER];
+int distancesFromSerial2[DATA_SET_COUNTER];
+
 byte startByte = 0xFF;
 
 /* **********************************************************
@@ -103,6 +113,12 @@ void setup(){
     // display opening screen
   oled.setFont(u8g2_font_6x10_tf);
   oled.setDrawColor(1);
+
+  // init distance array
+  for (int i=0; i<DATA_SET_COUNTER; i=i+1){
+    distancesFromSerial1[i] = -1;
+    distancesFromSerial2[i] = -1;
+  }
 
   delay(500);
 }
@@ -147,6 +163,11 @@ void loop(){
       visbileState = 1;
     }
 
+
+    // reset dataset counter
+    COUNTDATASET1 = -1;
+    COUNTDATASET2 = -1;
+       
     // sevseg.setChars(testStrings[testStringsPos]);
     // testStringsPos++;
     // if (testStringsPos >= MAX_NUMBER_STRINGS) testStringsPos = 0;
@@ -155,6 +176,43 @@ void loop(){
 
   }
 
+   // Cycle to the next data set 1
+  if (millis() > (getDataSet1timer + DATA_WAIT_TIME))
+  {
+
+    COUNTDATASET1++;
+
+        if ((COUNTDATASET1>=0) && (COUNTDATASET1<DATA_SET_COUNTER)) {
+ 
+             String info1 = "s1+++";
+             info1 = info1 + COUNTDATASET1;
+             info1 = info1 + " ";
+             
+             triggerGetDataToSerial(Serial1, info1); 
+        }
+    
+    getDataSet1timer = millis();
+
+  }
+
+ // Cycle to the next data set 1
+  if (millis() > (getDataSet2timer + DATA_WAIT_TIME))
+  {
+
+    COUNTDATASET2++;
+
+        if ((COUNTDATASET2>=0) && (COUNTDATASET2<DATA_SET_COUNTER)) {
+ 
+             String info2 = "s2+++";
+             info2 = info2 + COUNTDATASET2;
+             info2 = info2 + " ";
+             
+             triggerGetDataToSerial(Serial2, info2); 
+        }
+    
+    getDataSet2timer = millis();
+
+  }
 
     // Cycle to the next string every one second
     if (millis() > (infotimer + INFO_WAIT_TIME))
@@ -186,6 +244,7 @@ void loop(){
       {
         if (enableSerialLog)
         {
+          Serial.println(">>>");
           Serial.print("Distance 1 / 2 [cm]: ");
           Serial.print(distanceCM1);
           Serial.print(" [");
@@ -195,7 +254,29 @@ void loop(){
           Serial.print(distanceCM2);
           Serial.print(" [");
           Serial.print(noSerial2Data);          
-          Serial.println("x no data] ");
+          Serial.print("x no data] ");
+          Serial.print(" >>> COUNTBACK: ");
+          Serial.print(COUNTBACK);          
+          Serial.println("s");
+          Serial.println("<<<");
+
+          Serial.println("DataSet (counter) 1 / 2 ");
+            // print array
+          for (int i=0; i<DATA_SET_COUNTER; i=i+1){
+            Serial.print("(");
+            Serial.print(i);
+            Serial.print(") ");
+            Serial.print(distancesFromSerial1[i]);
+            Serial.print(" [");
+            Serial.print(COUNTDATASET1);
+            Serial.print("]");
+            Serial.print(" / ");
+            Serial.print(distancesFromSerial2[i]);
+            Serial.print(" [");
+            Serial.print(COUNTDATASET2);
+            Serial.println("]");
+          }
+          
         }    
 
       }
@@ -230,6 +311,17 @@ void loop(){
       Serial.println(distanceFromSerial1);
       // longtimer -= LONG_WAIT_TIME*0.8;
     }
+
+    if ((COUNTDATASET1>=0) && (COUNTDATASET1<DATA_SET_COUNTER)) {
+        if (enableArraySerialLog)
+        {
+          Serial.print(">>> getDataSet1timer-");
+          Serial.print(COUNTDATASET1);        
+          Serial.print(" set to :");   
+          Serial.println(distanceFromSerial1);      
+        }  
+        distancesFromSerial1[COUNTDATASET1] = distanceFromSerial1;
+    }
     
     getData1timer = millis();
     getSerial1Data = false;
@@ -242,10 +334,25 @@ void loop(){
     if (distanceFromSerial2 > 0) {
        distanceCM2 = distanceFromSerial2/10;
     } else {
-      Serial.print("s2  Wrong distance result: ");
-      Serial.println(distanceFromSerial2);
-      // longtimer -= LONG_WAIT_TIME*0.8;
+       if (enableExtendedSerialLog)
+        {
+          Serial.print("s2  Wrong distance result: ");
+          Serial.println(distanceFromSerial2);
+          // longtimer -= LONG_WAIT_TIME*0.8;          
+        }
     }
+
+    if ((COUNTDATASET2>=0) && (COUNTDATASET2<DATA_SET_COUNTER)) {
+        if (enableArraySerialLog)
+        {
+          Serial.print(">>> getDataSet2timer-");
+          Serial.print(COUNTDATASET2);        
+          Serial.print(" set to :");   
+          Serial.println(distanceFromSerial2);      
+        }  
+        distancesFromSerial2[COUNTDATASET2] = distanceFromSerial2;
+    }
+    
     getData2timer = millis();
     getSerial2Data = false;
   }
@@ -285,8 +392,10 @@ void loop(){
 /* ******************************************************** */
 
 void display_data() {
-    oled.setCursor(70, 38);
+    oled.setCursor(30, 38);
+    oled.println("--> ");
     oled.println(COUNTBACK);
+    oled.println("s");
   
     char cmStr[12];
     char cmStrFull[24];
@@ -403,7 +512,7 @@ void display_data() {
 void triggerGetDataToSerial(HardwareSerial localSerial, String info){
   // https://wolles-elektronikkiste.de/hc-sr04-und-jsn-sr04t-2-0-abstandssensoren
   unsigned int distance;
-  bool DEBUG = true;
+  bool DEBUG = false;
   
   // start trigger on serial
   if (DEBUG)
