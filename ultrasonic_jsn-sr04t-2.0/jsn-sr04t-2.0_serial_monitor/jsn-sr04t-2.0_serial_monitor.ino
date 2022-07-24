@@ -33,7 +33,7 @@ unsigned int bar_y1, bar_y2;
 
 bool enableSerialLog = true;
 bool enableExtendedSerialLog = false;
-bool enableArraySerialLog = false;
+bool enableArraySerialLog = true;
 int enableSound = 0;
 int visbileState = 1;
 
@@ -48,7 +48,7 @@ int COUNTDATASET2 = 0;
 #define INFO_WAIT_TIME 5000
 #define DISPLAY_WAIT_TIME 2500
 #define DATA_SET_COUNTER 5
-#define DATA_WAIT_TIME 500
+#define DATA_WAIT_TIME 100
 unsigned long longtimer = millis() - LONG_WAIT_TIME;
 unsigned long infotimer = millis() - INFO_WAIT_TIME;
 unsigned long triggerbytetimer = millis() - DISPLAY_WAIT_TIME;
@@ -195,7 +195,7 @@ void loop(){
 
   }
 
- // Cycle to the next data set 1
+ // Cycle to the next data set 2
   if (millis() > (getDataSet2timer + DATA_WAIT_TIME))
   {
 
@@ -239,58 +239,15 @@ void loop(){
         Serial.println(noSerial2Data);    
       }    
 
-
-      if (distanceCM1>0 || distanceCM2>0) 
-      {
+      
         if (enableSerialLog)
         {
-          Serial.println(">>>");
-          Serial.print("Distance 1 / 2 [cm]: ");
-          Serial.print(distanceCM1);
-          Serial.print(" [");
-          Serial.print(noSerial1Data);          
-          Serial.print("x no data] ");
-          Serial.print(" / ");
-          Serial.print(distanceCM2);
-          Serial.print(" [");
-          Serial.print(noSerial2Data);          
-          Serial.print("x no data] ");
           Serial.print(" >>> COUNTBACK: ");
           Serial.print(COUNTBACK);          
           Serial.println("s");
-          Serial.println("<<<");
-
-          Serial.println("DataSet (counter) 1 / 2 ");
-            // print array
-          for (int i=0; i<DATA_SET_COUNTER; i=i+1){
-            Serial.print("(");
-            Serial.print(i);
-            Serial.print(") ");
-            Serial.print(distancesFromSerial1[i]);
-            Serial.print(" [");
-            Serial.print(COUNTDATASET1);
-            Serial.print("]");
-            Serial.print(" / ");
-            Serial.print(distancesFromSerial2[i]);
-            Serial.print(" [");
-            Serial.print(COUNTDATASET2);
-            Serial.println("]");
-          }
-          
         }    
 
-      }
-      else
-      {
-
-        delay(100);
-        if (count>=10) //to offen no data
-        {
-          Serial.print("Distance 1 / 2 [cm]: ");
-          Serial.println(maxRangeMM/10); // cm
-        }
-      }
-      
+            
       COUNTBACK = COUNTBACK - INFO_WAIT_TIME/1000;
       infotimer = millis();      
 
@@ -322,6 +279,34 @@ void loop(){
         }  
         distancesFromSerial1[COUNTDATASET1] = distanceFromSerial1;
     }
+
+    if (COUNTDATASET1=DATA_SET_COUNTER-1) {
+
+        if (enableSerialLog)
+        {
+          Serial.println(">>>");
+          Serial.print("Distance 1 [cm]: ");
+          Serial.print(distanceCM1);
+          Serial.print(" [");
+          Serial.print(noSerial1Data);          
+          Serial.print("x no data] ");
+         
+          Serial.println("DataSet (counter) 1");
+            // print array
+          for (int i=0; i<DATA_SET_COUNTER; i=i+1){
+            Serial.print("(");
+            Serial.print(i);
+            Serial.print(") ");
+            Serial.print(distancesFromSerial1[i]);
+            Serial.print(" [");
+            Serial.print(COUNTDATASET1);
+            Serial.println("]");
+            
+          }
+          
+        }    
+
+    }
     
     getData1timer = millis();
     getSerial1Data = false;
@@ -352,6 +337,35 @@ void loop(){
         }  
         distancesFromSerial2[COUNTDATASET2] = distanceFromSerial2;
     }
+
+      if (COUNTDATASET2=DATA_SET_COUNTER-1) {
+
+        if (enableSerialLog)
+        {
+          Serial.println(">>>");
+          Serial.print("Distance 2 [cm]: ");
+          Serial.print(distanceCM2);
+          Serial.print(" [");
+          Serial.print(noSerial2Data);          
+          Serial.print("x no data] ");
+         
+          Serial.println("DataSet (counter) 2");
+            // print array
+          for (int i=0; i<DATA_SET_COUNTER; i=i+1){
+            Serial.print("(");
+            Serial.print(i);
+            Serial.print(") ");
+            Serial.print(distancesFromSerial2[i]);
+            Serial.print(" [");
+            Serial.print(COUNTDATASET2);
+            Serial.println("]");
+            
+          }
+          
+        }    
+
+    }
+ 
     
     getData2timer = millis();
     getSerial2Data = false;
