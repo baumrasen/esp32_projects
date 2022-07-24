@@ -297,11 +297,17 @@ void display_data() {
     sprintf(cmStr, "%f", distanceCM1);
     sprintf(cmStrFull, "%i cm", (int)distanceCM1);
 
-    oled.setCursor(10, 15);
+    oled.setCursor(0, 15);
     oled.println("Sensor 1:");
-    oled.setCursor(30, 28);
+    oled.setCursor(0, 28);
     // oled.println(cm, DEC);
     oled.println(cmStrFull);
+
+    // no data counter
+    oled.setCursor(45, 28);
+    oled.println("[");
+    oled.println(noSerial1Data);
+    oled.println("]");
     
     // oled.drawFrame(78, 0, sizeX-78, sizeY);
     oled.drawFrame(barStartX, barStartY, 2*barWidth, barEndY-barStartY);
@@ -344,11 +350,17 @@ void display_data() {
     sprintf(lcmStr, "%f", distanceCM2);
     sprintf(lcmStrFull, "%i cm", (int)distanceCM2);
 
-    oled.setCursor(10, 47);
+    oled.setCursor(0, 47);
     oled.println("Sensor 2:");
-    oled.setCursor(30, 60);
+    oled.setCursor(0, 60);
     // oled.println(cm, DEC);
     oled.println(lcmStrFull);
+
+        // no data counter
+    oled.setCursor(45, 60);
+    oled.println("[");
+    oled.println(noSerial2Data);
+    oled.println("]");
     
     // oled.drawBox(0, 62, round((float)distanceProc2/100*sizeX), 2);
     //if (distanceCM2==0)
@@ -417,7 +429,7 @@ void serialEvent2() {
 }
 
 int serialEventResult(HardwareSerial localSerial, String info) {
-  bool DEBUG = true;
+  bool DEBUG = false;
 
   unsigned int distance;
   
