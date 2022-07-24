@@ -32,6 +32,7 @@ unsigned int bar_y1, bar_y2;
 #define barWidth 24
 
 bool enableSerialLog = true;
+bool enableExtendedSerialLog = false;
 int enableSound = 0;
 int visbileState = 1;
 
@@ -166,7 +167,7 @@ void loop(){
         triggerGetDataToSerial(Serial2, "s2+");  
       }        
       
-      if (enableSerialLog)
+      if (enableExtendedSerialLog)
       {
         Serial.print("Infotimer: ");
         Serial.println(COUNTBACK);            
@@ -187,8 +188,14 @@ void loop(){
         {
           Serial.print("Distance 1 / 2 [cm]: ");
           Serial.print(distanceCM1);
+          Serial.print(" [");
+          Serial.print(noSerial1Data);          
+          Serial.print("x no data] ");
           Serial.print(" / ");
-          Serial.println(distanceCM2);
+          Serial.print(distanceCM2);
+          Serial.print(" [");
+          Serial.print(noSerial2Data);          
+          Serial.println("x no data] ");
         }    
 
       }
