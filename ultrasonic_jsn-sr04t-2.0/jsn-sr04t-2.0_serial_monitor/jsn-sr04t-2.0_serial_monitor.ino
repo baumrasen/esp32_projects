@@ -33,9 +33,6 @@ unsigned int bar_y1, bar_y2;
 
 bool enableSerialLog = true;
 bool enableExtendedSerialLog = false;
-bool enableSerial1 = false;
-bool enableSerial2 = true;
-
 int enableSound = 0;
 int visbileState = 1;
 
@@ -44,8 +41,8 @@ int visbileState = 1;
 int COUNT = 0;
 int COUNTBACK = 0;
 
-#define LONG_WAIT_TIME 10000
-#define INFO_WAIT_TIME 5000
+#define LONG_WAIT_TIME 5000
+#define INFO_WAIT_TIME 1000
 #define DISPLAY_WAIT_TIME 2500
 unsigned long longtimer = millis() - LONG_WAIT_TIME;
 unsigned long infotimer = millis() - INFO_WAIT_TIME;
@@ -53,8 +50,6 @@ unsigned long triggerbytetimer = millis() - DISPLAY_WAIT_TIME;
 unsigned long wrongbytetimer = millis() - DISPLAY_WAIT_TIME;
 unsigned long getData1timer = millis() - LONG_WAIT_TIME;
 unsigned long getData2timer = millis() - LONG_WAIT_TIME;
-
-unsigned long presenttime = 0;
 
 /* **************** DISPLAY SETTINGS **************** */
 #define ROW_HEIGHT 9
@@ -76,15 +71,8 @@ bool getTriggerByte = false;
 bool getTriggerByteDisplay = false;
 bool getWrongByte = false;
 bool getWrongByteDisplay = false;
-
 bool getSerial1Data = false;
-bool getSerial1DebugInfo = false;
-String Serial1DebugInfo = "";
-
 bool getSerial2Data = false;
-bool getSerial2DebugInfo = false;
-String Serial2DebugInfo = "";
-
 int noSerial1Data = 0;
 int noSerial2Data = 0;
 int distanceFromSerial1 = -1;
@@ -133,14 +121,9 @@ void loop(){
     
     // writeWrongDataToSerial(Serial2);
 
-//    if (enableSerial1) {
-//      triggerGetDataToSerial(Serial1, "s1 ");  
-//    }
+    triggerGetDataToSerial(Serial1, "s1 ");
+    triggerGetDataToSerial(Serial2, "s2 ");
 
-//    if (enableSerial2) {
-//      triggerGetDataToSerial(Serial2, "s2 ");  
-//    }
-    
       if (millis() > (getData1timer + LONG_WAIT_TIME)) {
         noSerial1Data++;
       }
@@ -173,23 +156,16 @@ void loop(){
   }
 
 
-    // Cycle to the next call event
+    // Cycle to the next string every one second
     if (millis() > (infotimer + INFO_WAIT_TIME))
     {      
 
-      if (enableSerial1)
-      {
-        if (distanceFromSerial1<-1) {
-          triggerGetDataToSerial(Serial1, "s1+");  
-        }        
+      if (distanceFromSerial1<-1) {
+        triggerGetDataToSerial(Serial1, "s1+");  
       }
-      
-      if (enableSerial2)
-      {
-        if (distanceFromSerial2<-1) {
-          triggerGetDataToSerial(Serial2, "s2+");  
-        }          
-      }
+      if (distanceFromSerial2<-1) {
+        triggerGetDataToSerial(Serial2, "s2+");  
+      }        
       
       if (enableExtendedSerialLog)
       {
@@ -210,21 +186,16 @@ void loop(){
       {
         if (enableSerialLog)
         {
-          long presenttime1 =  millis() - getData1timer;
-          long presenttime2 =  millis() - getData2timer;
-          
-          Serial.print("Distance 1 / 2 [cm] ### noSerialData 1 / 2 ### timeSinceLastData 1 / 2: ");
+          Serial.print("Distance 1 / 2 [cm]: ");
           Serial.print(distanceCM1);
+          Serial.print(" [");
+          Serial.print(noSerial1Data);          
+          Serial.print("x no data] ");
           Serial.print(" / ");
           Serial.print(distanceCM2);
-          Serial.print(" ### ");
-          Serial.print(noSerial1Data);
-          Serial.print(" / ");
-          Serial.print(noSerial2Data);
-          Serial.print(" ### ");
-          Serial.print(presenttime1);
-          Serial.print(" / ");
-          Serial.println(presenttime2);
+          Serial.print(" [");
+          Serial.print(noSerial2Data);          
+          Serial.println("x no data] ");
         }    
 
       }
@@ -259,8 +230,6 @@ void loop(){
       Serial.println(distanceFromSerial1);
       // longtimer -= LONG_WAIT_TIME*0.8;
     }
-
-    Serial.print("s1 timer = " + getData1timer - millis());
     
     getData1timer = millis();
     getSerial1Data = false;
@@ -277,21 +246,10 @@ void loop(){
       Serial.println(distanceFromSerial2);
       // longtimer -= LONG_WAIT_TIME*0.8;
     }
-
-    presenttime =  millis() - getData2timer;
-    Serial.println("=========================================================>>>>>>>>>>>>>>>>>> getSerial2Data=true");
-    Serial.print("s2 timer = ");
-    Serial.println(presenttime);
-    
     getData2timer = millis();
     getSerial2Data = false;
   }
 
-  if (getSerial2DebugInfo == true) {
-    Serial.println("DEBUG EVENT =================>>>>>>>>>>>>>>>>>> getSerial2DebugInfo=true");    
-    Serial.println(Serial2DebugInfo);        
-    getSerial2DebugInfo = false;
-  }
   
   if (distanceCM1>0 || distanceCM2>0) 
   {
@@ -449,134 +407,17 @@ void triggerGetDataToSerial(HardwareSerial localSerial, String info){
 }
 
 void serialEvent1() {
-    bool DEBUG = true;
-  
-  // start trigger on serial
-  if (DEBUG)
-  {    
-    Serial.println("==========================");
-    Serial.println(" DEBUG serialEvent11 --> ");    
-  }
   distanceFromSerial1 = serialEventResult(Serial1, "s1 ");
   getSerial1Data = true;
 }
 
 void serialEvent2() {
-    bool DEBUG = true;
-    String info = "s2 ";
-    
-  // start trigger on serial
-  if (DEBUG)
-  {    
-    getSerial2DebugInfo = getSerial2DebugInfo + "==========================" + '\n';    
-    getSerial2DebugInfo = getSerial2DebugInfo + " DEBUG serialEvent2 --> " + '\n';    
-    getSerial2DebugInfo = true;
-  }
-  
-  // distanceFromSerial2 = serialEventResult(Serial2, "s2 ");
-
-  unsigned int distance;
-  
-  byte startByte, h_data, l_data, sum = 0;
-  byte buf[3];
-
-  while (Serial2.available()) {
-  
-    startByte = (byte)Serial2.read();
-    
-    if(startByte == 255){
-      Serial2.readBytes(buf, 3);
-      h_data = buf[0];
-      l_data = buf[1];
-      sum = buf[2];
-      distance = (h_data<<8) + l_data;
-      
-      if(((startByte + h_data + l_data)&0xFF) != sum){
-        if (DEBUG)
-          {
-            getSerial2DebugInfo = getSerial2DebugInfo + info + '\n';
-            getSerial2DebugInfo = getSerial2DebugInfo + " DEBUG Invalid checksum" + '\n'; 
-            getSerial2DebugInfo = getSerial2DebugInfo + "Received Data => ";
-
-            for(i=0; i<sizeof(buf); i++){
-               getSerial2DebugInfo = getSerial2DebugInfo + convertToHex(buf[i]);
-            }
-            getSerial2DebugInfo = getSerial2DebugInfo + "" + '\n';
-            getSerial2DebugInfo = true;
-          }
-        //return 0;
-        // distanceFromSerial1 = -3;
-        //return -3;
-        distanceFromSerial2 = -3;
-        // return an error
-        getSerial2Data = true;          
-
-      }
-      else
-      {
-        if (DEBUG)
-          {
-            getSerial2DebugInfo = getSerial2DebugInfo + info;
-            getSerial2DebugInfo = getSerial2DebugInfo + " DEBUG Distance [mm]: "; 
-            getSerial2DebugInfo = getSerial2DebugInfo + distance;      
-            getSerial2DebugInfo = true;      
-          }
-          
-        if (distance<maxRangeMM) // mm
-          {
-            //return distance;
-            // distanceFromSerial1 = distance;
-            // return distance;
-            distanceFromSerial2 = distance;
-            // return the distance
-            getSerial2Data = true;          
-
-          }
-        else
-          {
-            //return 0;
-            // distanceFromSerial1 = -9;
-            // return -9;
-            distanceFromSerial2 = -9;
-            // return an error
-            getSerial2Data = true;          
-
-          }        
-      } 
-    } 
-    else
-    {
-      if (DEBUG)
-      {
-        getSerial2DebugInfo = getSerial2DebugInfo + info;
-        getSerial2DebugInfo = getSerial2DebugInfo + " DEBUG Invalid startByte: "; 
-        // Serial.println(startByte );
-        getSerial2DebugInfo = getSerial2DebugInfo + convertToHex(startByte);
-        // localSerial.readBytes(buf, 3);
-        // Serial.print("Received Data => ");
-        // Serial.print(buf[0]);
-        // Serial.print(buf[1]);
-        // Serial.println(buf[2]);
-        // Serial.println(buf)
-        // for(i=0; i<sizeof(buf); i++){
-        //    printHex(buf[i]);
-        // }
-        getSerial2DebugInfo = getSerial2DebugInfo + "";
-        getSerial2DebugInfo = true;
-      }
-      // return 0;
-      // distanceFromSerial1 = -2;
-      // return -2;
-      distanceFromSerial2 = -2;
-      // return an error
-      getSerial2Data = true;          
-    }
-    
-  }
+  distanceFromSerial2 = serialEventResult(Serial2, "s2 ");
+  getSerial2Data = true;
 }
 
 int serialEventResult(HardwareSerial localSerial, String info) {
-  bool DEBUG = false;
+  bool DEBUG = true;
 
   unsigned int distance;
   
@@ -668,13 +509,6 @@ void readSerial(HardwareSerial localSerial){
     Serial.println(s1);//display same received Data back in serial monitor.
   }
 
-}
-
-String HexToString(uint8_t num) {
-  char hexCar[2];
-
-  sprintf(hexCar, "%02X", num);
-  return hexCar;
 }
 
 void printHex(uint8_t num) {
